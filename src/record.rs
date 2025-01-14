@@ -27,7 +27,7 @@ impl Data {
 const SAMPLE_SIZE: usize = 100;
 
 fn serialize_to_value(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample_vec(SAMPLE_SIZE);
+    let data = Data::sample();
 
     g.bench_function("to_value", |b| {
         b.iter(|| {
@@ -37,6 +37,26 @@ fn serialize_to_value(g: &mut BenchmarkGroup<WallTime>) {
 }
 
 fn serialize_to_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("to_string", |b| {
+        b.iter(|| {
+            black_box(serde_json::to_string(black_box(&data)).unwrap());
+        })
+    });
+}
+
+fn serialize_big_to_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+
+    g.bench_function("to_value", |b| {
+        b.iter(|| {
+            black_box(serde_json::to_value(black_box(&data)).unwrap());
+        })
+    });
+}
+
+fn serialize_big_to_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample_vec(SAMPLE_SIZE);
 
     g.bench_function("to_string", |b| {
@@ -134,6 +154,13 @@ fn bench_serialize(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_serialize_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("serialize_big");
+    serialize_big_to_value(&mut group);
+    serialize_big_to_string(&mut group);
+    group.finish();
+}
+
 fn bench_double_serialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("double_serialize");
     double_serialize_value(&mut group);
@@ -149,7 +176,8 @@ fn bench_insert(c: &mut Criterion) {
 }
 
 criterion_group!(serialize, bench_serialize);
+criterion_group!(serialize_big, bench_serialize_big);
 criterion_group!(double_serialize, bench_double_serialize);
 criterion_group!(insert, bench_insert);
 
-criterion_main!(serialize, double_serialize, insert);
+criterion_main!(serialize, serialize_big, double_serialize, insert);
