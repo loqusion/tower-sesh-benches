@@ -148,6 +148,91 @@ fn insert_to_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct ComplexData {
+    deeply: HashMap<String, Vec<HashMap<String, u8>>>,
+}
+
+impl ComplexData {
+    fn sample() -> Self {
+        let data = HashMap::from([
+            ("value".into(), 4),
+            ("another".into(), 6),
+            ("yet_another".into(), 7),
+        ]);
+        let data = iter::repeat(data).take(10).collect::<Vec<_>>();
+        let data = ["nested".into(), "data".into(), "is".into(), "cool".into()]
+            .into_iter()
+            .zip(iter::repeat(data))
+            .collect::<HashMap<_, _>>();
+
+        ComplexData { deeply: data }
+    }
+}
+
+fn insert_complex_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+
+    g.bench_function("value", |b| {
+        b.iter_batched(
+            || serde_json::to_value(&data).unwrap(),
+            |mut value| {
+                let v = value
+                    .get_mut(black_box("deeply"))
+                    .and_then(|v| v.get_mut(black_box("nested")))
+                    .and_then(|v| v.get_mut(black_box(3)))
+                    .and_then(|v| v.get_mut(black_box("value")))
+                    .unwrap();
+                *v = black_box(5).into();
+                black_box(v);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+
+    g.bench_function("value_as_data", |b| {
+        b.iter_batched(
+            || serde_json::to_value(&data).unwrap(),
+            |mut value| {
+                let mut data = serde_json::from_value::<ComplexData>(value).unwrap();
+                let v = data
+                    .deeply
+                    .get_mut(black_box("nested"))
+                    .and_then(|v| v.get_mut(black_box(3)))
+                    .and_then(|m| m.get_mut(black_box("value")))
+                    .unwrap();
+                *v = black_box(5);
+                value = serde_json::to_value(&data).unwrap();
+                black_box(value);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn insert_complex_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+
+    g.bench_function("string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&data).unwrap(),
+            |mut s| {
+                let mut data = serde_json::from_str::<ComplexData>(&s).unwrap();
+                let v = data
+                    .deeply
+                    .get_mut(black_box("nested"))
+                    .and_then(|v| v.get_mut(black_box(3)))
+                    .and_then(|m| m.get_mut(black_box("value")))
+                    .unwrap();
+                *v = black_box(5);
+                s = serde_json::to_string(&data).unwrap();
+                black_box(s);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
 fn bench_serialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize");
     serialize_to_value(&mut group);
@@ -176,9 +261,23 @@ fn bench_insert(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_insert_complex(c: &mut Criterion) {
+    let mut group = c.benchmark_group("insert_complex");
+    insert_complex_value(&mut group);
+    insert_complex_string(&mut group);
+    group.finish();
+}
+
 criterion_group!(serialize, bench_serialize);
 criterion_group!(serialize_big, bench_serialize_big);
 criterion_group!(double_serialize, bench_double_serialize);
 criterion_group!(insert, bench_insert);
+criterion_group!(insert_complex, bench_insert_complex);
 
-criterion_main!(serialize, serialize_big, double_serialize, insert);
+criterion_main!(
+    serialize,
+    serialize_big,
+    double_serialize,
+    insert,
+    insert_complex,
+);
