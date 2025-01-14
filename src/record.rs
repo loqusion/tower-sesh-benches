@@ -31,7 +31,7 @@ fn serialize_to_value(g: &mut BenchmarkGroup<WallTime>) {
 
     g.bench_function("to_value", |b| {
         b.iter(|| {
-            black_box(serde_json::to_value(&data).unwrap());
+            black_box(serde_json::to_value(black_box(&data)).unwrap());
         })
     });
 }
@@ -41,7 +41,7 @@ fn serialize_to_string(g: &mut BenchmarkGroup<WallTime>) {
 
     g.bench_function("to_string", |b| {
         b.iter(|| {
-            black_box(serde_json::to_string(&data).unwrap());
+            black_box(serde_json::to_string(black_box(&data)).unwrap());
         })
     });
 }
@@ -54,7 +54,7 @@ fn insert_to_value(g: &mut BenchmarkGroup<WallTime>) {
             || serde_json::to_value(&data).unwrap(),
             |mut value| {
                 let s = value.get_mut("s").unwrap();
-                *s = "good night, world!".into();
+                *s = black_box("good night, world!").into();
                 black_box(value);
             },
             BatchSize::SmallInput,
@@ -66,7 +66,7 @@ fn insert_to_value(g: &mut BenchmarkGroup<WallTime>) {
             || serde_json::to_value(&data).unwrap(),
             |mut value| {
                 let map = value.as_object_mut().unwrap();
-                map.insert("s".to_owned(), "good night, world!".into());
+                map.insert("s".to_owned(), black_box("good night, world!").into());
                 black_box(value);
             },
             BatchSize::SmallInput,
@@ -82,7 +82,7 @@ fn insert_to_string(g: &mut BenchmarkGroup<WallTime>) {
             || serde_json::to_string(&data).unwrap(),
             |mut s| {
                 let mut v = serde_json::from_str::<Data>(&s).unwrap();
-                v.s = "good night, world!".into();
+                v.s = black_box("good night, world!").into();
                 s = serde_json::to_string(&v).unwrap();
                 black_box(s);
             },
