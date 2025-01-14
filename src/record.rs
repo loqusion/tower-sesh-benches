@@ -117,12 +117,13 @@ fn insert_to_value(g: &mut BenchmarkGroup<WallTime>) {
         )
     });
 
-    g.bench_function("to_value_as_object_mut", |b| {
+    g.bench_function("to_value_as_data", |b| {
         b.iter_batched(
             || serde_json::to_value(&data).unwrap(),
             |mut value| {
-                let map = value.as_object_mut().unwrap();
-                map.insert("s".to_owned(), black_box("good night, world!").into());
+                let mut data = serde_json::from_value::<Data>(value).unwrap();
+                data.s = black_box("good night, world!").into();
+                value = serde_json::to_value(&data).unwrap();
                 black_box(value);
             },
             BatchSize::SmallInput,
