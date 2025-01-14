@@ -46,7 +46,7 @@ impl ComplexData {
     }
 }
 
-const SAMPLE_SIZE: usize = 100;
+const SAMPLE_SIZE: usize = 50;
 
 fn serialize_to_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
