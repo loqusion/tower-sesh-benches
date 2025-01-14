@@ -156,6 +156,132 @@ fn serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+fn deserialize_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+    type Map = HashMap<String, serde_json::Value>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+
+    g.bench_function("value", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: Data = map
+                    .get("data")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn deserialize_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+    type Map = HashMap<String, String>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+
+    g.bench_function("string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: Data = map
+                    .get("data")
+                    .and_then(|s| serde_json::from_str(s).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn deserialize_big_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+    type Map = HashMap<String, serde_json::Value>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+
+    g.bench_function("value", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: Vec<Data> = map
+                    .get("data")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn deserialize_big_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+    type Map = HashMap<String, String>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+
+    g.bench_function("string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: Vec<Data> = map
+                    .get("data")
+                    .and_then(|s| serde_json::from_str(s).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn deserialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+    type Map = HashMap<String, serde_json::Value>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+
+    g.bench_function("value", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: ComplexData = map
+                    .get("data")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn deserialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+    type Map = HashMap<String, String>;
+    let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+
+    g.bench_function("string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&map).unwrap(),
+            |buf| {
+                let map: Map = serde_json::from_str(&buf).unwrap();
+                let mut data: ComplexData = map
+                    .get("data")
+                    .and_then(|s| serde_json::from_str(s).ok())
+                    .unwrap();
+                black_box(&mut data);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
 fn get_from_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
 
@@ -358,6 +484,27 @@ fn bench_serialize_complex(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_deserialize(c: &mut Criterion) {
+    let mut group = c.benchmark_group("deserialize");
+    deserialize_value(&mut group);
+    deserialize_string(&mut group);
+    group.finish();
+}
+
+fn bench_deserialize_big(c: &mut Criterion) {
+    let mut group = c.benchmark_group("deserialize_big");
+    deserialize_big_value(&mut group);
+    deserialize_big_string(&mut group);
+    group.finish();
+}
+
+fn bench_deserialize_complex(c: &mut Criterion) {
+    let mut group = c.benchmark_group("deserialize_complex");
+    deserialize_complex_value(&mut group);
+    deserialize_complex_string(&mut group);
+    group.finish();
+}
+
 fn bench_get(c: &mut Criterion) {
     let mut group = c.benchmark_group("get");
     get_from_value(&mut group);
@@ -389,6 +536,9 @@ fn bench_insert_complex(c: &mut Criterion) {
 criterion_group!(serialize, bench_serialize);
 criterion_group!(serialize_big, bench_serialize_big);
 criterion_group!(serialize_complex, bench_serialize_complex);
+criterion_group!(deserialize, bench_deserialize);
+criterion_group!(deserialize_big, bench_deserialize_big);
+criterion_group!(deserialize_complex, bench_deserialize_complex);
 criterion_group!(get, bench_get);
 criterion_group!(get_complex, bench_get_complex);
 criterion_group!(insert, bench_insert);
@@ -398,6 +548,9 @@ criterion_main!(
     serialize,
     serialize_big,
     serialize_complex,
+    deserialize,
+    deserialize_big,
+    deserialize_complex,
     get,
     get_complex,
     insert,
