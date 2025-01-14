@@ -145,7 +145,7 @@ fn double_serialize_string(g: &mut BenchmarkGroup<WallTime>) {
 }
 
 fn double_serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample();
+    let data = ComplexData::sample();
 
     g.bench_function("to_value", |b| {
         b.iter_batched(
@@ -163,7 +163,7 @@ fn double_serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
 }
 
 fn double_serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample();
+    let data = ComplexData::sample();
 
     g.bench_function("to_string", |b| {
         b.iter_batched(
