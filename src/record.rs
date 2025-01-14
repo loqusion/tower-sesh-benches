@@ -180,6 +180,78 @@ fn double_serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+fn get_from_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("from_value", |b| {
+        b.iter_batched(
+            || serde_json::to_value(&data).unwrap(),
+            |value| {
+                let s = value.get("s").and_then(|s| s.as_str()).unwrap();
+                black_box(s);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn get_from_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("from_string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&data).unwrap(),
+            |value| {
+                let data = serde_json::from_str::<Data>(&value).unwrap();
+                black_box(&data.s);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn get_complex_from_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+
+    g.bench_function("from_value", |b| {
+        b.iter_batched(
+            || serde_json::to_value(&data).unwrap(),
+            |value| {
+                let n = value
+                    .get("deeply")
+                    .and_then(|v| v.get("nested"))
+                    .and_then(|v| v.get(3))
+                    .and_then(|v| v.get("value"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap();
+                black_box(n);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn get_complex_from_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+
+    g.bench_function("from_string", |b| {
+        b.iter_batched(
+            || serde_json::to_string(&data).unwrap(),
+            |value| {
+                let data = serde_json::from_str::<ComplexData>(&value).unwrap();
+                black_box(
+                    data.deeply
+                        .get("nested")
+                        .and_then(|v| v.get(3))
+                        .and_then(|m| m.get("value"))
+                        .unwrap(),
+                );
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
 fn insert_to_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
 
@@ -324,6 +396,20 @@ fn bench_double_serialize_complex(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_get(c: &mut Criterion) {
+    let mut group = c.benchmark_group("get");
+    get_from_value(&mut group);
+    get_from_string(&mut group);
+    group.finish();
+}
+
+fn bench_get_complex(c: &mut Criterion) {
+    let mut group = c.benchmark_group("get_complex");
+    get_complex_from_value(&mut group);
+    get_complex_from_string(&mut group);
+    group.finish();
+}
+
 fn bench_insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert");
     insert_to_value(&mut group);
@@ -343,6 +429,8 @@ criterion_group!(serialize_big, bench_serialize_big);
 criterion_group!(serialize_complex, bench_serialize_complex);
 criterion_group!(double_serialize, bench_double_serialize);
 criterion_group!(double_serialize_complex, bench_double_serialize_complex);
+criterion_group!(get, bench_get);
+criterion_group!(get_complex, bench_get_complex);
 criterion_group!(insert, bench_insert);
 criterion_group!(insert_complex, bench_insert_complex);
 
@@ -352,6 +440,8 @@ criterion_main!(
     serialize_complex,
     double_serialize,
     double_serialize_complex,
+    get,
+    get_complex,
     insert,
     insert_complex,
 );
