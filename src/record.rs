@@ -1,4 +1,4 @@
-use std::{hint::black_box, iter};
+use std::{collections::HashMap, hint::black_box, iter};
 
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BatchSize, BenchmarkGroup, Criterion,
@@ -43,6 +43,42 @@ fn serialize_to_string(g: &mut BenchmarkGroup<WallTime>) {
         b.iter(|| {
             black_box(serde_json::to_string(black_box(&data)).unwrap());
         })
+    });
+}
+
+fn double_serialize_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("to_value", |b| {
+        b.iter_batched(
+            || HashMap::<String, serde_json::Value>::from([("data".into(), Default::default())]),
+            |mut map| {
+                map.insert(
+                    "data".into(),
+                    serde_json::to_value(black_box(&data)).unwrap(),
+                );
+                black_box(serde_json::to_string(&map).unwrap());
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn double_serialize_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("to_string", |b| {
+        b.iter_batched(
+            || HashMap::<String, String>::from([("data".into(), Default::default())]),
+            |mut map| {
+                map.insert(
+                    "data".into(),
+                    serde_json::to_string(black_box(&data)).unwrap(),
+                );
+                black_box(serde_json::to_string(&map).unwrap());
+            },
+            BatchSize::SmallInput,
+        )
     });
 }
 
@@ -98,6 +134,13 @@ fn bench_serialize(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_double_serialize(c: &mut Criterion) {
+    let mut group = c.benchmark_group("double_serialize");
+    double_serialize_value(&mut group);
+    double_serialize_string(&mut group);
+    group.finish();
+}
+
 fn bench_insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert");
     insert_to_value(&mut group);
@@ -106,6 +149,7 @@ fn bench_insert(c: &mut Criterion) {
 }
 
 criterion_group!(serialize, bench_serialize);
+criterion_group!(double_serialize, bench_double_serialize);
 criterion_group!(insert, bench_insert);
 
-criterion_main!(serialize, insert);
+criterion_main!(serialize, double_serialize, insert);
