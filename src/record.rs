@@ -48,67 +48,7 @@ impl ComplexData {
 
 const SAMPLE_SIZE: usize = 50;
 
-fn serialize_to_value(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample();
-
-    g.bench_function("to_value", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_value(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn serialize_to_string(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample();
-
-    g.bench_function("to_string", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn serialize_big_to_value(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample_vec(SAMPLE_SIZE);
-
-    g.bench_function("to_value", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_value(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn serialize_big_to_string(g: &mut BenchmarkGroup<WallTime>) {
-    let data = Data::sample_vec(SAMPLE_SIZE);
-
-    g.bench_function("to_string", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn serialize_complex_to_value(g: &mut BenchmarkGroup<WallTime>) {
-    let data = ComplexData::sample();
-
-    g.bench_function("to_value", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_value(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn serialize_complex_to_string(g: &mut BenchmarkGroup<WallTime>) {
-    let data = ComplexData::sample();
-
-    g.bench_function("to_string", |b| {
-        b.iter(|| {
-            black_box(serde_json::to_string(black_box(&data)).unwrap());
-        })
-    });
-}
-
-fn double_serialize_value(g: &mut BenchmarkGroup<WallTime>) {
+fn serialize_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
 
     g.bench_function("to_value", |b| {
@@ -126,7 +66,7 @@ fn double_serialize_value(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-fn double_serialize_string(g: &mut BenchmarkGroup<WallTime>) {
+fn serialize_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
 
     g.bench_function("to_string", |b| {
@@ -144,7 +84,43 @@ fn double_serialize_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-fn double_serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
+fn serialize_big_value(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+
+    g.bench_function("to_value", |b| {
+        b.iter_batched(
+            || HashMap::<String, serde_json::Value>::from([("data".into(), Default::default())]),
+            |mut map| {
+                map.insert(
+                    "data".into(),
+                    serde_json::to_value(black_box(&data)).unwrap(),
+                );
+                black_box(serde_json::to_string(&map).unwrap());
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn serialize_big_string(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+
+    g.bench_function("to_string", |b| {
+        b.iter_batched(
+            || HashMap::<String, String>::from([("data".into(), Default::default())]),
+            |mut map| {
+                map.insert(
+                    "data".into(),
+                    serde_json::to_string(black_box(&data)).unwrap(),
+                );
+                black_box(serde_json::to_string(&map).unwrap());
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
+fn serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = ComplexData::sample();
 
     g.bench_function("to_value", |b| {
@@ -162,7 +138,7 @@ fn double_serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
-fn double_serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
+fn serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = ComplexData::sample();
 
     g.bench_function("to_string", |b| {
@@ -363,36 +339,22 @@ fn insert_complex_string(g: &mut BenchmarkGroup<WallTime>) {
 
 fn bench_serialize(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize");
-    serialize_to_value(&mut group);
-    serialize_to_string(&mut group);
+    serialize_value(&mut group);
+    serialize_string(&mut group);
     group.finish();
 }
 
 fn bench_serialize_big(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_big");
-    serialize_big_to_value(&mut group);
-    serialize_big_to_string(&mut group);
+    serialize_big_value(&mut group);
+    serialize_big_string(&mut group);
     group.finish();
 }
 
 fn bench_serialize_complex(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_complex");
-    serialize_complex_to_value(&mut group);
-    serialize_complex_to_string(&mut group);
-    group.finish();
-}
-
-fn bench_double_serialize(c: &mut Criterion) {
-    let mut group = c.benchmark_group("double_serialize");
-    double_serialize_value(&mut group);
-    double_serialize_string(&mut group);
-    group.finish();
-}
-
-fn bench_double_serialize_complex(c: &mut Criterion) {
-    let mut group = c.benchmark_group("double_serialize_complex");
-    double_serialize_complex_value(&mut group);
-    double_serialize_complex_string(&mut group);
+    serialize_complex_value(&mut group);
+    serialize_complex_string(&mut group);
     group.finish();
 }
 
@@ -427,8 +389,6 @@ fn bench_insert_complex(c: &mut Criterion) {
 criterion_group!(serialize, bench_serialize);
 criterion_group!(serialize_big, bench_serialize_big);
 criterion_group!(serialize_complex, bench_serialize_complex);
-criterion_group!(double_serialize, bench_double_serialize);
-criterion_group!(double_serialize_complex, bench_double_serialize_complex);
 criterion_group!(get, bench_get);
 criterion_group!(get_complex, bench_get_complex);
 criterion_group!(insert, bench_insert);
@@ -438,8 +398,6 @@ criterion_main!(
     serialize,
     serialize_big,
     serialize_complex,
-    double_serialize,
-    double_serialize_complex,
     get,
     get_complex,
     insert,
