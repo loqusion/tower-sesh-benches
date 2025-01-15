@@ -160,20 +160,17 @@ fn deserialize_simple_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
     type Map = HashMap<String, serde_json::Value>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("value", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: Data = map
-                    .get("data")
-                    .and_then(|value| serde_json::from_value(value.clone()).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: Data = map
+                .get("data")
+                .and_then(|value| serde_json::from_value(value.clone()).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -181,20 +178,17 @@ fn deserialize_simple_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
     type Map = HashMap<String, String>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("string", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: Data = map
-                    .get("data")
-                    .and_then(|s| serde_json::from_str(s).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: Data = map
+                .get("data")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -202,20 +196,17 @@ fn deserialize_big_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample_vec(SAMPLE_SIZE);
     type Map = HashMap<String, serde_json::Value>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("value", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: Vec<Data> = map
-                    .get("data")
-                    .and_then(|value| serde_json::from_value(value.clone()).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: Vec<Data> = map
+                .get("data")
+                .and_then(|value| serde_json::from_value(value.clone()).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -223,20 +214,17 @@ fn deserialize_big_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample_vec(SAMPLE_SIZE);
     type Map = HashMap<String, String>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("string", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: Vec<Data> = map
-                    .get("data")
-                    .and_then(|s| serde_json::from_str(s).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: Vec<Data> = map
+                .get("data")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -244,20 +232,17 @@ fn deserialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = ComplexData::sample();
     type Map = HashMap<String, serde_json::Value>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_value(data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("value", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: ComplexData = map
-                    .get("data")
-                    .and_then(|value| serde_json::from_value(value.clone()).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: ComplexData = map
+                .get("data")
+                .and_then(|value| serde_json::from_value(value.clone()).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -265,20 +250,17 @@ fn deserialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
     let data = ComplexData::sample();
     type Map = HashMap<String, String>;
     let map: Map = HashMap::from([("data".into(), serde_json::to_string(&data).unwrap())]);
+    let buf = serde_json::to_string(&map).unwrap();
 
     g.bench_function("string", |b| {
-        b.iter_batched(
-            || serde_json::to_string(&map).unwrap(),
-            |buf| {
-                let map: Map = serde_json::from_str(&buf).unwrap();
-                let mut data: ComplexData = map
-                    .get("data")
-                    .and_then(|s| serde_json::from_str(s).ok())
-                    .unwrap();
-                black_box(&mut data);
-            },
-            BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let map: Map = serde_json::from_str(black_box(&buf)).unwrap();
+            let mut data: ComplexData = map
+                .get("data")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
