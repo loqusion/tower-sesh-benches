@@ -48,6 +48,16 @@ impl ComplexData {
 
 const SAMPLE_SIZE: usize = 50;
 
+fn serialize_simple_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            black_box(serde_json::to_string(black_box(&data)).unwrap());
+        })
+    });
+}
+
 fn serialize_simple_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample();
 
@@ -81,6 +91,16 @@ fn serialize_simple_string(g: &mut BenchmarkGroup<WallTime>) {
             },
             BatchSize::SmallInput,
         )
+    });
+}
+
+fn serialize_big_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            black_box(serde_json::to_string(black_box(&data)).unwrap());
+        })
     });
 }
 
@@ -120,6 +140,16 @@ fn serialize_big_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+fn serialize_complex_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            black_box(serde_json::to_string(black_box(&data)).unwrap());
+        })
+    });
+}
+
 fn serialize_complex_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = ComplexData::sample();
 
@@ -153,6 +183,18 @@ fn serialize_complex_string(g: &mut BenchmarkGroup<WallTime>) {
             },
             BatchSize::SmallInput,
         )
+    });
+}
+
+fn deserialize_simple_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample();
+    let buf = serde_json::to_string(&data).unwrap();
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            let mut data: Data = serde_json::from_str(black_box(&buf)).unwrap();
+            black_box(&mut data);
+        })
     });
 }
 
@@ -192,6 +234,18 @@ fn deserialize_simple_string(g: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+fn deserialize_big_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = Data::sample_vec(SAMPLE_SIZE);
+    let buf = serde_json::to_string(&data).unwrap();
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            let mut data: Vec<Data> = serde_json::from_str(black_box(&buf)).unwrap();
+            black_box(&mut data);
+        })
+    });
+}
+
 fn deserialize_big_value(g: &mut BenchmarkGroup<WallTime>) {
     let data = Data::sample_vec(SAMPLE_SIZE);
     type Map = HashMap<String, serde_json::Value>;
@@ -223,6 +277,18 @@ fn deserialize_big_string(g: &mut BenchmarkGroup<WallTime>) {
                 .get("data")
                 .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap();
+            black_box(&mut data);
+        })
+    });
+}
+
+fn deserialize_complex_direct(g: &mut BenchmarkGroup<WallTime>) {
+    let data = ComplexData::sample();
+    let buf = serde_json::to_string(&data).unwrap();
+
+    g.bench_function("direct", |b| {
+        b.iter(|| {
+            let mut data: ComplexData = serde_json::from_str(black_box(&buf)).unwrap();
             black_box(&mut data);
         })
     });
@@ -447,6 +513,7 @@ fn insert_complex_string(g: &mut BenchmarkGroup<WallTime>) {
 
 fn bench_serialize_simple(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_simple");
+    serialize_simple_direct(&mut group);
     serialize_simple_value(&mut group);
     serialize_simple_string(&mut group);
     group.finish();
@@ -454,6 +521,7 @@ fn bench_serialize_simple(c: &mut Criterion) {
 
 fn bench_serialize_big(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_big");
+    serialize_big_direct(&mut group);
     serialize_big_value(&mut group);
     serialize_big_string(&mut group);
     group.finish();
@@ -461,6 +529,7 @@ fn bench_serialize_big(c: &mut Criterion) {
 
 fn bench_serialize_complex(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialize_complex");
+    serialize_complex_direct(&mut group);
     serialize_complex_value(&mut group);
     serialize_complex_string(&mut group);
     group.finish();
@@ -468,6 +537,7 @@ fn bench_serialize_complex(c: &mut Criterion) {
 
 fn bench_deserialize_simple(c: &mut Criterion) {
     let mut group = c.benchmark_group("deserialize_simple");
+    deserialize_simple_direct(&mut group);
     deserialize_simple_value(&mut group);
     deserialize_simple_string(&mut group);
     group.finish();
@@ -475,6 +545,7 @@ fn bench_deserialize_simple(c: &mut Criterion) {
 
 fn bench_deserialize_big(c: &mut Criterion) {
     let mut group = c.benchmark_group("deserialize_big");
+    deserialize_big_direct(&mut group);
     deserialize_big_value(&mut group);
     deserialize_big_string(&mut group);
     group.finish();
@@ -482,6 +553,7 @@ fn bench_deserialize_big(c: &mut Criterion) {
 
 fn bench_deserialize_complex(c: &mut Criterion) {
     let mut group = c.benchmark_group("deserialize_complex");
+    deserialize_complex_direct(&mut group);
     deserialize_complex_value(&mut group);
     deserialize_complex_string(&mut group);
     group.finish();
